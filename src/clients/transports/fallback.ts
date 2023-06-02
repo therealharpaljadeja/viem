@@ -1,5 +1,5 @@
 import type { Chain } from '../../types/chain.js'
-import { isDeterministicError } from '../../utils/buildRequest.js'
+import { isDeterministicContractError } from '../../utils/errors/isDeterministicError.js'
 import { wait } from '../../utils/wait.js'
 
 import {
@@ -7,6 +7,7 @@ import {
   type TransportConfig,
   createTransport,
 } from './createTransport.js'
+
 // TODO: Narrow `method` & `params` types.
 export type OnResponseFn = (
   args: {
@@ -130,7 +131,7 @@ export function fallback(
 
               // If the error is deterministic, we don't need to fall back.
               // So throw the error.
-              if (isDeterministicError(err as Error)) throw err
+              if (isDeterministicContractError(err as Error)) throw err
 
               // If we've reached the end of the fallbacks, throw the error.
               if (i === transports.length - 1) throw err

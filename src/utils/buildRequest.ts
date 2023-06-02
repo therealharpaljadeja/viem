@@ -24,31 +24,12 @@ import {
   UnsupportedProviderMethodError,
   UserRejectedRequestError,
 } from '../errors/rpc.js'
+import {
+  isDeterministicContractError,
+  isDeterministicHttpError,
+} from './errors/isDeterministicError.js'
 
 import { withRetry } from './promise/withRetry.js'
-
-export const isDeterministicError = (error: Error) => {
-  if ('code' in error)
-    return (
-      error.code !== -1 &&
-      error.code !== -32004 &&
-      error.code !== -32005 &&
-      error.code !== -32042 &&
-      error.code !== -32603
-    )
-  if (error instanceof HttpRequestError && error.status)
-    return (
-      error.status !== 403 &&
-      error.status !== 408 &&
-      error.status !== 413 &&
-      error.status !== 429 &&
-      error.status !== 500 &&
-      error.status !== 502 &&
-      error.status !== 503 &&
-      error.status !== 504
-    )
-  return false
-}
 
 export function buildRequest<TRequest extends (args: any) => Promise<any>>(
   request: TRequest,
@@ -106,7 +87,9 @@ export function buildRequest<TRequest extends (args: any) => Promise<any>>(
           return ~~(1 << count) * retryDelay
         },
         retryCount,
-        shouldRetry: ({ error }) => !isDeterministicError(error),
+        shouldRetry: ({ error }) =>
+          !isDeterministicContractError(error) &&
+          !isDeterministicHttpError(error),
       },
     )) as TRequest
 }

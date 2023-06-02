@@ -646,6 +646,31 @@ describe('behavior', () => {
       expect(retryCount).toBe(3)
     })
 
+    test('non-deterministic HttpRequestError (401)', async () => {
+      let retryCount = -1
+      const server = await createHttpServer((_req, res) => {
+        retryCount++
+        res.writeHead(401, {
+          'Content-Type': 'application/json',
+        })
+        res.end(JSON.stringify({}))
+      })
+
+      await expect(() =>
+        buildRequest(request(server.url))({ method: 'eth_blockNumber' }),
+      ).rejects.toThrowErrorMatchingInlineSnapshot(`
+        "HTTP request failed.
+
+        Status: 401
+        URL: http://localhost
+        Request body: {\\"method\\":\\"eth_blockNumber\\"}
+
+        Details: Unauthorized
+        Version: viem@1.0.2"
+      `)
+      expect(retryCount).toBe(3)
+    })
+
     test('non-deterministic HttpRequestError (403)', async () => {
       let retryCount = -1
       const server = await createHttpServer((_req, res) => {
@@ -746,22 +771,6 @@ describe('behavior', () => {
       expect(retryCount).toBe(3)
     })
 
-    test('deterministic HttpRequestError (401)', async () => {
-      let retryCount = -1
-      const server = await createHttpServer((_req, res) => {
-        retryCount++
-        res.writeHead(401, {
-          'Content-Type': 'application/json',
-        })
-        res.end(JSON.stringify({}))
-      })
-
-      await expect(() =>
-        buildRequest(request(server.url))({ method: 'eth_blockNumber' }),
-      ).rejects.toThrowError()
-      expect(retryCount).toBe(0)
-    })
-
     test('deterministic RpcError', async () => {
       let retryCount = -1
       const server = await createHttpServer((_req, res) => {
@@ -835,6 +844,14 @@ describe('isDeterministicError', () => {
     expect(
       isDeterministicError(
         new HttpRequestError({ body: {}, details: '', status: 429, url: '' }),
+      ),
+    ).toBe(false)
+  })
+
+  test('HttpRequestError (401)', () => {
+    expect(
+      isDeterministicError(
+        new HttpRequestError({ body: {}, details: '', status: 401, url: '' }),
       ),
     ).toBe(false)
   })
