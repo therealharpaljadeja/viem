@@ -1,7 +1,6 @@
 import type { Account } from '../../accounts/types.js'
 import { parseAccount } from '../../accounts/utils/parseAccount.js'
 import type { Client } from '../../clients/createClient.js'
-import type { Transport } from '../../clients/transports/createTransport.js'
 import { AccountNotFoundError } from '../../errors/account.js'
 import type { BaseError } from '../../errors/base.js'
 import type { GetAccountParameter } from '../../types/account.js'
@@ -24,17 +23,17 @@ import { prepareRequest } from '../../utils/transaction/prepareRequest.js'
 import { getChainId } from '../public/getChainId.js'
 
 export type SendTransactionParameters<
-  TChain extends Chain | undefined = Chain | undefined,
-  TAccount extends Account | undefined = Account | undefined,
-  TChainOverride extends Chain | undefined = Chain,
+  chain extends Chain | undefined = Chain | undefined,
+  account extends Account | undefined = Account | undefined,
+  chainOverride extends Chain | undefined = Chain,
 > = UnionOmit<
   FormattedTransactionRequest<
-    IsUndefined<TChain> extends true ? TChainOverride : TChain
+    IsUndefined<chain> extends true ? chainOverride : chain
   >,
   'from'
 > &
-  GetAccountParameter<TAccount> &
-  GetChain<TChain, TChainOverride>
+  GetAccountParameter<account> &
+  GetChain<chain, chainOverride>
 
 export type SendTransactionReturnType = Hash
 
@@ -84,12 +83,12 @@ export type SendTransactionReturnType = Hash
  * })
  */
 export async function sendTransaction<
-  TChain extends Chain | undefined,
-  TAccount extends Account | undefined,
-  TChainOverride extends Chain | undefined,
+  chain extends Chain | undefined,
+  account extends Account | undefined,
+  chainOverride extends Chain | undefined,
 >(
-  client: Client<Transport, TChain, TAccount>,
-  args: SendTransactionParameters<TChain, TAccount, TChainOverride>,
+  client: Client<chain, account>,
+  args: SendTransactionParameters<chain, account, chainOverride>,
 ): Promise<SendTransactionReturnType> {
   const {
     account: account_ = client.account,

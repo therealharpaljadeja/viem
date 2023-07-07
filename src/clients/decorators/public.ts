@@ -1379,7 +1379,7 @@ export const publicActions = <
   TChain extends Chain | undefined = Chain | undefined,
   TAccount extends Account | undefined = Account | undefined,
 >(
-  client: Client<TTransport, TChain, TAccount>,
+  client: Client<TChain, TAccount, TTransport>,
 ): PublicActions<TTransport, TChain, TAccount> => ({
   call: (args) => call(client, args),
   createBlockFilter: () => createBlockFilter(client),

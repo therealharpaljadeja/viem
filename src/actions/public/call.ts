@@ -3,7 +3,6 @@ import type { Address } from 'abitype'
 import type { Account } from '../../accounts/types.js'
 import { parseAccount } from '../../accounts/utils/parseAccount.js'
 import type { Client } from '../../clients/createClient.js'
-import type { Transport } from '../../clients/transports/createTransport.js'
 import { multicall3Abi } from '../../constants/abis.js'
 import { aggregate3Signature } from '../../constants/contract.js'
 import { BaseError } from '../../errors/base.js'
@@ -14,6 +13,7 @@ import {
 import { RawContractError } from '../../errors/contract.js'
 import type { BlockTag } from '../../types/block.js'
 import type { Chain } from '../../types/chain.js'
+import type { OneOf } from '../../types/contract2.js'
 import type { Hex } from '../../types/misc.js'
 import type { RpcTransactionRequest } from '../../types/rpc.js'
 import type { TransactionRequest } from '../../types/transaction.js'
@@ -32,30 +32,25 @@ import { createBatchScheduler } from '../../utils/promise/createBatchScheduler.j
 import { assertRequest } from '../../utils/transaction/assertRequest.js'
 import type { AssertRequestParameters } from '../../utils/transaction/assertRequest.js'
 
-export type FormattedCall<
-  TChain extends Chain | undefined = Chain | undefined,
-> = FormattedTransactionRequest<TChain>
-
 export type CallParameters<
   TChain extends Chain | undefined = Chain | undefined,
-> = UnionOmit<FormattedCall<TChain>, 'from'> & {
-  account?: Account | Address
-  batch?: boolean
-} & (
+> = UnionOmit<FormattedTransactionRequest<TChain>, 'from'> &
+  OneOf<
     | {
         /** The balance of the account at a block number. */
         blockNumber?: bigint
-        blockTag?: never
       }
     | {
-        blockNumber?: never
         /**
          * The balance of the account at a block tag.
          * @default 'latest'
          */
         blockTag?: BlockTag
       }
-  )
+  > & {
+    account?: Account | Address
+    batch?: boolean
+  }
 
 export type CallReturnType = { data: Hex | undefined }
 
@@ -85,7 +80,7 @@ export type CallReturnType = { data: Hex | undefined }
  * })
  */
 export async function call<TChain extends Chain | undefined>(
-  client: Client<Transport, TChain>,
+  client: Client<TChain>,
   args: CallParameters<TChain>,
 ): Promise<CallReturnType> {
   const {
@@ -197,7 +192,7 @@ type ScheduleMulticallParameters<TChain extends Chain | undefined> = Pick<
 }
 
 async function scheduleMulticall<TChain extends Chain | undefined,>(
-  client: Client<Transport>,
+  client: Client<TChain>,
   args: ScheduleMulticallParameters<TChain>,
 ) {
   const { batchSize = 1024, wait = 0 } =

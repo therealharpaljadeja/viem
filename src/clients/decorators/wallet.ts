@@ -528,7 +528,7 @@ export const walletActions = <
   TChain extends Chain | undefined = Chain | undefined,
   TAccount extends Account | undefined = Account | undefined,
 >(
-  client: Client<TTransport, TChain, TAccount>,
+  client: Client<TChain, TAccount, TTransport>,
 ): WalletActions<TChain, TAccount> => ({
   addChain: (args) => addChain(client, args),
   deployContract: (args) => deployContract(client, args),

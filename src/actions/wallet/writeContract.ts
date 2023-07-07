@@ -2,7 +2,6 @@ import type { Abi, ExtractAbiFunctionNames } from 'abitype'
 
 import type { Account } from '../../accounts/types.js'
 import type { Client } from '../../clients/createClient.js'
-import type { Transport } from '../../clients/transports/createTransport.js'
 import type { Chain } from '../../types/chain.js'
 import type { Hex } from '../../types/misc.js'
 import { encodeFunctionData } from '../../utils/abi/encodeFunctionData.js'
@@ -25,25 +24,19 @@ export type WriteContractParameters<
     : string = abi extends Abi
     ? ExtractAbiFunctionNames<abi, 'nonpayable' | 'payable'>
     : string,
-  clientChain extends Chain | undefined = Chain,
+  chain extends Chain | undefined = Chain,
   account extends Account | undefined = undefined,
-  chain extends Chain | undefined = undefined,
+  chainOverride extends Chain | undefined = undefined,
 > = ContractFunctionParameters<abi, 'nonpayable' | 'payable', functionName> &
-  ChainParameter<clientChain, chain> & {
+  ChainParameter<chain, chainOverride> & {
     /** Data to append to the end of the calldata. Useful for adding a ["domain" tag](https://opensea.notion.site/opensea/Seaport-Order-Attributions-ec2d69bf455041a5baa490941aad307f). */
     dataSuffix?: Hex
-  } extends infer type extends { args: unknown; chain: unknown }
-  ? (undefined extends type['args'] ? true : false) &
-      (undefined extends type['chain'] ? true : false) extends true
-    ? PartialBy<
-        type,
-        | (undefined extends type['args'] ? 'args' : never)
-        | (undefined extends type['chain'] ? 'chain' : never)
-      >
+  } extends infer type extends { args: unknown }
+  ? (undefined extends type['args'] ? true : false) extends true
+    ? PartialBy<type, undefined extends type['args'] ? 'args' : never>
     : type
   : never
 
-// chain GetChain<TChain, TChainOverride>
 // SendTransactionParameters UnionOmit<SendTransactionParameters<TChain, TAccount, TChainOverride>, 'chain' | 'to' | 'data' | 'value'>
 // value
 // TODO: Evaluate<> works with IDE autocomplete UI
@@ -101,21 +94,21 @@ export type WriteContractReturnType = SendTransactionReturnType
  * const hash = await writeContract(client, request)
  */
 export async function writeContract<
-  clientChain extends Chain | undefined,
+  chain extends Chain | undefined,
   account extends Account | undefined,
   const abi extends Abi | readonly unknown[],
   functionName extends abi extends Abi
     ? ExtractAbiFunctionNames<abi, 'nonpayable' | 'payable'>
     : string,
-  chain extends Chain | undefined = undefined,
+  chainOverride extends Chain | undefined,
 >(
-  client: Client<Transport, clientChain, account>,
+  client: Client<chain, account>,
   parameters: WriteContractParameters<
     abi,
     functionName,
-    clientChain,
+    chain,
     account,
-    chain
+    chainOverride
   >,
 ): Promise<WriteContractReturnType>
 

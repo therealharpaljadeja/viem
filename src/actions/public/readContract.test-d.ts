@@ -21,6 +21,7 @@ test('args', () => {
       address: '0x',
       abi: wagmiMintExampleAbi,
       functionName: 'name',
+      args: [],
     })
     assertType<string>(result)
   })
@@ -52,6 +53,7 @@ test('return types', () => {
       address: '0x',
       abi: wagmiMintExampleAbi,
       functionName: 'name',
+      args: [],
     })
     assertType<string>(result)
   })
@@ -109,6 +111,7 @@ test('behavior', () => {
       address: '0x',
       abi: abi,
       functionName: 'foo',
+      args: [],
     })
     const result2 = await readContract(publicClient, {
       address: '0x',
@@ -143,6 +146,7 @@ test('behavior', () => {
       address: '0x',
       abi: abi,
       functionName: 'foo',
+      args: [],
     })
     const result2 = await readContract(publicClient, {
       address: '0x',
@@ -176,6 +180,7 @@ test('behavior', () => {
         },
       ],
       functionName: 'foo',
+      args: [],
     })
     const result2 = await readContract(publicClient, {
       address: '0x',
@@ -260,7 +265,7 @@ test('ReadContractParameters', () => {
     expectTypeOf<Result>().toEqualTypeOf<{
       abi: typeof abi
       functionName: string
-      args?: readonly unknown[] | undefined
+      args: readonly unknown[] | undefined
     }>()
   })
 
@@ -272,7 +277,7 @@ test('ReadContractParameters', () => {
     expectTypeOf<Result>().toEqualTypeOf<{
       abi: Abi
       functionName: string
-      args?: readonly unknown[] | undefined
+      args: readonly unknown[] | undefined
     }>()
   })
 
@@ -293,7 +298,7 @@ test('ReadContractParameters', () => {
         | 'supportsInterface'
         | 'tokenURI'
         | 'totalSupply'
-      args?: readonly [] | undefined
+      args: readonly [] | undefined
     }>()
   })
 

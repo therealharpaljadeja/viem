@@ -90,20 +90,20 @@ type Extended = { [K in keyof Client_Base]?: undefined } & {
 }
 
 export type Client<
-  TTransport extends Transport = Transport,
   TChain extends Chain | undefined = Chain | undefined,
   TAccount extends Account | undefined = Account | undefined,
+  TTransport extends Transport = Transport,
   TRpcSchema extends RpcSchema | undefined = undefined,
   TExtended extends Extended | undefined = Extended | undefined,
 > = Client_Base<TTransport, TChain, TAccount, TRpcSchema> & {
   extend: <TNextExtended extends Extended = Extended>(
     fn: (
-      client: Client<TTransport, TChain, TAccount, TRpcSchema, TExtended>,
+      client: Client<TChain, TAccount, TTransport, TRpcSchema, TExtended>,
     ) => Narrow<TNextExtended>,
   ) => Client<
-    TTransport,
     TChain,
     TAccount,
+    TTransport,
     TRpcSchema,
     (TExtended extends Extended ? TExtended : {}) & TNextExtended
   >
@@ -126,11 +126,11 @@ export function createClient<
   transport,
   type = 'base',
 }: ClientConfig<TTransport, TChain, TAccountOrAddress>): Client<
-  TTransport,
   TChain,
   TAccountOrAddress extends Address
     ? Prettify<JsonRpcAccount<TAccountOrAddress>>
-    : TAccountOrAddress
+    : TAccountOrAddress,
+  TTransport
 > {
   const { config, request, value } = transport({ chain, pollingInterval })
   const client = {

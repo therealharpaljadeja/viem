@@ -6,13 +6,11 @@ import type {
 } from 'abitype'
 
 import type { Client } from '../../clients/createClient.js'
-import type { Transport } from '../../clients/transports/createTransport.js'
 import type { BaseError } from '../../errors/base.js'
 import type { Chain } from '../../types/chain.js'
 import type {
   ContractFunctionParameters,
   ContractFunctionReturnType,
-  PartialBy,
 } from '../../types/contract2.js'
 import { decodeFunctionResult } from '../../utils/abi/decodeFunctionResult.js'
 import { encodeFunctionData } from '../../utils/abi/encodeFunctionData.js'
@@ -34,15 +32,7 @@ export type ReadContractParameters<
       >
     : readonly unknown[] = any,
 > = ContractFunctionParameters<abi, 'pure' | 'view', functionName, args> &
-  Pick<
-    CallParameters,
-    'account' | 'blockNumber' | 'blockTag'
-  > extends infer type extends { args: unknown }
-  ? (undefined extends type['args'] ? true : false) extends true
-    ? PartialBy<type, 'args'>
-    : type
-  : never
-// TODO: Evaluate<> works with IDE autocomplete UI
+  Pick<CallParameters, 'account' | 'blockNumber' | 'blockTag'>
 
 export type ReadContractReturnType<
   abi extends Abi | readonly unknown[] = Abi,
@@ -103,7 +93,7 @@ export async function readContract<
       >
     : readonly unknown[],
 >(
-  client: Client<Transport, chain>,
+  client: Client<chain>,
   parameters: ReadContractParameters<abi, functionName, args>,
 ): Promise<ReadContractReturnType<abi, functionName, args>>
 
@@ -115,18 +105,18 @@ export async function readContract(
   const calldata = encodeFunctionData({ abi, args, functionName })
   try {
     const { data } = await call(client, {
+      ...(callRequest as unknown as CallParameters),
       data: calldata,
       to: address,
-      ...callRequest,
-    } as unknown as CallParameters) // TODO: Remove assertion
+    })
     return decodeFunctionResult({
       abi,
       args,
       functionName,
       data: data || '0x',
     })
-  } catch (err) {
-    throw getContractError(err as BaseError, {
+  } catch (error) {
+    throw getContractError(error as BaseError, {
       abi,
       address,
       args,

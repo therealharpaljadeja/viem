@@ -1,7 +1,6 @@
 import type { Abi, Address } from 'abitype'
 
 import { type CallParameters, call } from '../actions/public/call.js'
-import type { Transport } from '../clients/transports/createTransport.js'
 import { type BaseError } from '../errors/base.js'
 import {
   OffchainLookupError,
@@ -50,7 +49,7 @@ export const offchainLookupAbiItem = {
 } as const satisfies Abi[number]
 
 export async function offchainLookup<TChain extends Chain | undefined,>(
-  client: Client<Transport, TChain>,
+  client: Client<TChain>,
   {
     blockNumber,
     blockTag,

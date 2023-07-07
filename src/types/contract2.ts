@@ -114,11 +114,12 @@ export type ContractFunctionReturnType<
 export type ChainParameter<
   clientChain extends Chain | undefined,
   chain extends Chain | undefined = undefined,
-> = {
-  chain:
-    | ([undefined] extends [clientChain] ? Chain : Chain | undefined)
-    | (chain extends Chain ? chain : never)
-}
+> = PartialBy<
+  {
+    chain: (chain extends Chain ? chain : never) | Chain
+  },
+  [undefined] extends [clientChain] ? never : 'chain'
+>
 
 /////////////////////////////////////////////////////////////////////////////////////
 
@@ -184,3 +185,31 @@ export type PartialBy<type, key extends keyof type> = ExactPartial<
   Pick<type, key>
 > &
   Omit<type, key>
+
+export type PrettifyFlat<T> = T extends infer U
+  ? { [K in keyof U]: U[K] }
+  : never
+
+type PickUndefinedAndConvertToOptional<T> = {
+  [K in keyof T as undefined extends T[K] ? K : never]?: Exclude<
+    T[K],
+    undefined
+  >
+}
+
+type PickNonUndefined<T> = {
+  [K in keyof T as undefined extends T[K] ? never : K]: T[K]
+}
+
+export type UndefinedFieldsToOptional<T> = PrettifyFlat<
+  { [K in keyof T]?: unknown } & PickUndefinedAndConvertToOptional<T> &
+    PickNonUndefined<T>
+>
+
+export type OneOf<
+  Union extends object,
+  AllKeys extends KeyofUnion<Union> = KeyofUnion<Union>,
+> = Union extends infer Item
+  ? Evaluate<Item & { [K in Exclude<AllKeys, keyof Item>]?: never }>
+  : never
+type KeyofUnion<T> = T extends T ? keyof T : never

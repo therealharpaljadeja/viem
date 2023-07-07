@@ -18,9 +18,9 @@ export type PublicClient<
   TChain extends Chain | undefined = Chain | undefined,
 > = Prettify<
   Client<
-    TTransport,
     TChain,
     undefined,
+    TTransport,
     PublicRpcSchema,
     PublicActions<TTransport, TChain>
   >

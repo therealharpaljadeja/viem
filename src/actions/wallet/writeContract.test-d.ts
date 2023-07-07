@@ -221,26 +221,25 @@ test('WriteContractParameters', () => {
   })
 })
 
-const res = writeContract(walletClient, {
+writeContract(walletClient, {
   ...wagmiContractConfig,
   functionName: 'mint',
   args: [69420n],
-  chain: mainnet,
-  // ^?
+  // chain: mainnet,
 })
 
 // walletClient
 // walletClientWithoutChain
 
-const res = writeContract(walletClient, {
+writeContract(walletClient, {
   ...wagmiContractConfig,
-  chain: mainnet,
   functionName: 'mint',
   args: [69420n],
+  // chain: mainnet,
 })
-const res2 = writeContract(walletClientWithoutChain, {
+writeContract(walletClientWithoutChain, {
   ...wagmiContractConfig,
-  chain: mainnet,
   functionName: 'mint',
   args: [69420n],
+  chain: mainnet,
 })

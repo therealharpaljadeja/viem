@@ -27,9 +27,9 @@ export type WalletClient<
   TAccount extends Account | undefined = Account | undefined,
 > = Prettify<
   Client<
-    TTransport,
     TChain,
     TAccount,
+    TTransport,
     WalletRpcSchema,
     WalletActions<TChain, TAccount>
   >
