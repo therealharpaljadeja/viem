@@ -1,35 +1,63 @@
-import type { Abi } from 'abitype'
+import type {
+  Abi,
+  AbiParametersToPrimitiveTypes,
+  ExtractAbiFunction,
+  ExtractAbiFunctionNames,
+} from 'abitype'
 
 import type { Client } from '../../clients/createClient.js'
 import type { Transport } from '../../clients/transports/createTransport.js'
 import type { BaseError } from '../../errors/base.js'
 import type { Chain } from '../../types/chain.js'
 import type {
-  ContractFunctionConfig,
-  ContractFunctionResult,
-} from '../../types/contract.js'
-import {
-  type DecodeFunctionResultParameters,
-  decodeFunctionResult,
-} from '../../utils/abi/decodeFunctionResult.js'
-import {
-  type EncodeFunctionDataParameters,
-  encodeFunctionData,
-} from '../../utils/abi/encodeFunctionData.js'
+  ContractFunctionParameters,
+  ContractFunctionReturnType,
+  PartialBy,
+} from '../../types/contract2.js'
+import { decodeFunctionResult } from '../../utils/abi/decodeFunctionResult.js'
+import { encodeFunctionData } from '../../utils/abi/encodeFunctionData.js'
 import { getContractError } from '../../utils/errors/getContractError.js'
 
 import { type CallParameters, call } from './call.js'
 
 export type ReadContractParameters<
-  TAbi extends Abi | readonly unknown[] = Abi,
-  TFunctionName extends string = string,
-> = Pick<CallParameters, 'account' | 'blockNumber' | 'blockTag'> &
-  ContractFunctionConfig<TAbi, TFunctionName, 'view' | 'pure'>
+  abi extends Abi | readonly unknown[] = Abi,
+  functionName extends abi extends Abi
+    ? ExtractAbiFunctionNames<abi, 'pure' | 'view'>
+    : string = abi extends Abi
+    ? ExtractAbiFunctionNames<abi, 'pure' | 'view'>
+    : string,
+  args extends abi extends Abi
+    ? AbiParametersToPrimitiveTypes<
+        ExtractAbiFunction<abi, functionName>['inputs'],
+        'inputs'
+      >
+    : readonly unknown[] = any,
+> = ContractFunctionParameters<abi, 'pure' | 'view', functionName, args> &
+  Pick<
+    CallParameters,
+    'account' | 'blockNumber' | 'blockTag'
+  > extends infer type extends { args: unknown }
+  ? (undefined extends type['args'] ? true : false) extends true
+    ? PartialBy<type, 'args'>
+    : type
+  : never
+// TODO: Evaluate<> works with IDE autocomplete UI
 
 export type ReadContractReturnType<
-  TAbi extends Abi | readonly unknown[] = Abi,
-  TFunctionName extends string = string,
-> = ContractFunctionResult<TAbi, TFunctionName>
+  abi extends Abi | readonly unknown[] = Abi,
+  functionName extends abi extends Abi
+    ? ExtractAbiFunctionNames<abi, 'pure' | 'view'>
+    : string = abi extends Abi
+    ? ExtractAbiFunctionNames<abi, 'pure' | 'view'>
+    : string,
+  args extends abi extends Abi
+    ? AbiParametersToPrimitiveTypes<
+        ExtractAbiFunction<abi, functionName, 'pure' | 'view'>['inputs'],
+        'inputs'
+      >
+    : readonly unknown[] = any,
+> = ContractFunctionReturnType<abi, 'pure' | 'view', functionName, args>
 
 /**
  * Calls a read-only function on a contract, and returns the response.
@@ -63,42 +91,43 @@ export type ReadContractReturnType<
  * // 424122n
  */
 export async function readContract<
-  TChain extends Chain | undefined,
-  TAbi extends Abi | readonly unknown[],
-  TFunctionName extends string,
+  chain extends Chain | undefined,
+  const abi extends Abi | readonly unknown[],
+  functionName extends abi extends Abi
+    ? ExtractAbiFunctionNames<abi, 'pure' | 'view'>
+    : string,
+  const args extends abi extends Abi
+    ? AbiParametersToPrimitiveTypes<
+        ExtractAbiFunction<abi, functionName, 'pure' | 'view'>['inputs'],
+        'inputs'
+      >
+    : readonly unknown[],
 >(
-  client: Client<Transport, TChain>,
-  {
-    abi,
-    address,
-    args,
-    functionName,
-    ...callRequest
-  }: ReadContractParameters<TAbi, TFunctionName>,
-): Promise<ReadContractReturnType<TAbi, TFunctionName>> {
-  const calldata = encodeFunctionData({
-    abi,
-    args,
-    functionName,
-  } as unknown as EncodeFunctionDataParameters<TAbi, TFunctionName>)
+  client: Client<Transport, chain>,
+  parameters: ReadContractParameters<abi, functionName, args>,
+): Promise<ReadContractReturnType<abi, functionName, args>>
+
+export async function readContract(
+  client: Client,
+  parameters: ReadContractParameters,
+): Promise<ReadContractReturnType> {
+  const { abi, address, args, functionName, ...callRequest } = parameters
+  const calldata = encodeFunctionData({ abi, args, functionName })
   try {
     const { data } = await call(client, {
       data: calldata,
       to: address,
       ...callRequest,
-    } as unknown as CallParameters)
+    } as unknown as CallParameters) // TODO: Remove assertion
     return decodeFunctionResult({
       abi,
       args,
       functionName,
       data: data || '0x',
-    } as DecodeFunctionResultParameters<
-      TAbi,
-      TFunctionName
-    >) as ReadContractReturnType<TAbi, TFunctionName>
+    })
   } catch (err) {
     throw getContractError(err as BaseError, {
-      abi: abi as Abi,
+      abi,
       address,
       args,
       docsPath: '/docs/contract/readContract',

@@ -1,69 +1,16 @@
-import { seaportAbi } from 'abitype/test'
-import { assertType, expectTypeOf, test } from 'vitest'
+import type { Abi, Address } from 'abitype'
+import { seaportAbi, wagmiMintExampleAbi } from 'abitype/test'
+import { expectTypeOf, test } from 'vitest'
 
 import { wagmiContractConfig } from '../../_test/abis.js'
-import { walletClientWithAccount } from '../../_test/utils.js'
+import {
+  walletClient,
+  walletClientWithAccount,
+  walletClientWithoutChain,
+} from '../../_test/utils.js'
+import { mainnet } from '../../chains/index.js'
+import type { Evaluate, PartialBy } from '../../types/contract2.js'
 import { type WriteContractParameters, writeContract } from './writeContract.js'
-
-test('WriteContractParameters', async () => {
-  type Result = WriteContractParameters<typeof seaportAbi, 'cancel'>
-  expectTypeOf<Result['functionName']>().toEqualTypeOf<
-    | 'cancel'
-    | 'fulfillAdvancedOrder'
-    | 'fulfillAvailableAdvancedOrders'
-    | 'fulfillAvailableOrders'
-    | 'fulfillBasicOrder'
-    | 'fulfillBasicOrder_efficient_6GL6yc'
-    | 'fulfillOrder'
-    | 'incrementCounter'
-    | 'matchAdvancedOrders'
-    | 'matchOrders'
-    | 'validate'
-  >()
-
-  const address = '0x' as const
-  assertType<WriteContractParameters<typeof seaportAbi, 'cancel'>>({
-    abi: seaportAbi,
-    account: address,
-    address,
-    functionName: 'cancel',
-    // ^?
-    args: [
-      [
-        {
-          offerer: address,
-          zone: address,
-          offer: [
-            {
-              itemType: 1,
-              token: address,
-              identifierOrCriteria: 1n,
-              startAmount: 1n,
-              endAmount: 1n,
-            },
-          ],
-          consideration: [
-            {
-              itemType: 1,
-              token: address,
-              identifierOrCriteria: 1n,
-              startAmount: 1n,
-              endAmount: 1n,
-              recipient: address,
-            },
-          ],
-          counter: 1n,
-          orderType: 1,
-          startTime: 1n,
-          endTime: 1n,
-          salt: 1n,
-          conduitKey: address,
-          zoneHash: address,
-        },
-      ],
-    ],
-  })
-})
 
 const args = {
   ...wagmiContractConfig,
@@ -166,4 +113,134 @@ test('eip2930', () => {
     maxPriorityFeePerGas: 0n,
     type: 'eip2930',
   })
+})
+
+test('WriteContractParameters', () => {
+  test('without const assertion', () => {
+    const abi = [
+      {
+        name: 'foo',
+        type: 'function',
+        stateMutability: 'nonpayable',
+        inputs: [],
+        outputs: [{ type: 'string', name: '' }],
+      },
+      {
+        name: 'bar',
+        type: 'function',
+        stateMutability: 'nonpayable',
+        inputs: [{ type: 'address', name: '' }],
+        outputs: [{ type: 'address', name: '' }],
+      },
+    ]
+    type Result = WriteContractParameters<typeof abi, 'foo'>
+    expectTypeOf<Result>().toMatchTypeOf<{
+      abi: typeof abi
+      functionName: string
+      args?: readonly unknown[] | undefined
+    }>()
+  })
+
+  test('declared as Abi type', () => {
+    type Result = WriteContractParameters<Abi>
+    expectTypeOf<Result>().toMatchTypeOf<{
+      abi: Abi
+      functionName: string
+      args?: readonly unknown[] | undefined
+    }>()
+  })
+
+  test('zero args', () => {
+    type Result = WriteContractParameters<typeof wagmiMintExampleAbi, 'mint'>
+    expectTypeOf<Result>().toMatchTypeOf<{
+      abi: typeof wagmiMintExampleAbi
+      functionName:
+        | 'approve'
+        | 'mint'
+        | 'safeTransferFrom'
+        | 'setApprovalForAll'
+        | 'transferFrom'
+      args?: readonly [] | undefined
+    }>()
+  })
+
+  test('more than one arg', () => {
+    type Result = WriteContractParameters<typeof seaportAbi, 'cancel'>
+    type Expected = {
+      abi: typeof seaportAbi
+      functionName:
+        | 'cancel'
+        | 'fulfillAdvancedOrder'
+        | 'fulfillAvailableAdvancedOrders'
+        | 'fulfillAvailableOrders'
+        | 'fulfillBasicOrder'
+        | 'fulfillBasicOrder_efficient_6GL6yc'
+        | 'fulfillOrder'
+        | 'incrementCounter'
+        | 'matchAdvancedOrders'
+        | 'matchOrders'
+        | 'validate'
+      args: readonly [
+        readonly {
+          offerer: Address
+          zone: Address
+          offer: readonly {
+            itemType: number
+            token: Address
+            identifierOrCriteria: bigint
+            startAmount: bigint
+            endAmount: bigint
+          }[]
+          consideration: readonly {
+            itemType: number
+            token: Address
+            identifierOrCriteria: bigint
+            startAmount: bigint
+            endAmount: bigint
+            recipient: Address
+          }[]
+          counter: bigint
+          orderType: number
+          startTime: bigint
+          endTime: bigint
+          salt: bigint
+          conduitKey: Address
+          zoneHash: Address
+        }[],
+      ]
+    }
+    expectTypeOf<Result>().toMatchTypeOf<Expected>()
+
+    // can transform multiple times and type stays the same
+    expectTypeOf<
+      Pick<
+        Required<PartialBy<Evaluate<Result>, 'abi'>>,
+        'abi' | 'functionName' | 'args'
+      >
+    >().toEqualTypeOf<Expected>()
+  })
+})
+
+const res = writeContract(walletClient, {
+  ...wagmiContractConfig,
+  functionName: 'mint',
+  args: [69420n],
+  chain: mainnet,
+  // ^?
+})
+
+// walletClient
+// walletClientWithoutChain
+
+const res = writeContract(walletClient, {
+  ...wagmiContractConfig,
+  chain: mainnet,
+  functionName: 'mint',
+  args: [69420n],
+})
+const res2 = writeContract(walletClientWithoutChain, {
+  ...wagmiContractConfig,
+  chain: mainnet,
+  functionName: 'mint',
+  args: [69420n],
 })

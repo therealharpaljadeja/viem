@@ -1,17 +1,17 @@
-import type { Abi } from 'abitype'
+import type { Abi, ExtractAbiFunctionNames } from 'abitype'
 
 import type { Account } from '../../accounts/types.js'
 import type { Client } from '../../clients/createClient.js'
 import type { Transport } from '../../clients/transports/createTransport.js'
-import type { Chain, GetChain } from '../../types/chain.js'
-import type { ContractFunctionConfig, GetValue } from '../../types/contract.js'
+import type { Chain } from '../../types/chain.js'
 import type { Hex } from '../../types/misc.js'
-import type { UnionOmit } from '../../types/utils.js'
-import {
-  type EncodeFunctionDataParameters,
-  encodeFunctionData,
-} from '../../utils/abi/encodeFunctionData.js'
+import { encodeFunctionData } from '../../utils/abi/encodeFunctionData.js'
 
+import type {
+  ChainParameter,
+  ContractFunctionParameters,
+  PartialBy,
+} from '../../types/contract2.js'
 import {
   type SendTransactionParameters,
   type SendTransactionReturnType,
@@ -19,31 +19,34 @@ import {
 } from './sendTransaction.js'
 
 export type WriteContractParameters<
-  TAbi extends Abi | readonly unknown[] = Abi,
-  TFunctionName extends string = string,
-  TChain extends Chain | undefined = Chain,
-  TAccount extends Account | undefined = undefined,
-  TChainOverride extends Chain | undefined = undefined,
-> = ContractFunctionConfig<TAbi, TFunctionName, 'payable' | 'nonpayable'> &
-  UnionOmit<
-    SendTransactionParameters<TChain, TAccount, TChainOverride>,
-    'chain' | 'to' | 'data' | 'value'
-  > &
-  GetChain<TChain, TChainOverride> &
-  GetValue<
-    TAbi,
-    TFunctionName,
-    SendTransactionParameters<
-      TChain,
-      TAccount,
-      TChainOverride
-    > extends SendTransactionParameters
-      ? SendTransactionParameters<TChain, TAccount, TChainOverride>['value']
-      : SendTransactionParameters['value']
-  > & {
+  abi extends Abi | readonly unknown[] = Abi,
+  functionName extends abi extends Abi
+    ? ExtractAbiFunctionNames<abi, 'nonpayable' | 'payable'>
+    : string = abi extends Abi
+    ? ExtractAbiFunctionNames<abi, 'nonpayable' | 'payable'>
+    : string,
+  clientChain extends Chain | undefined = Chain,
+  account extends Account | undefined = undefined,
+  chain extends Chain | undefined = undefined,
+> = ContractFunctionParameters<abi, 'nonpayable' | 'payable', functionName> &
+  ChainParameter<clientChain, chain> & {
     /** Data to append to the end of the calldata. Useful for adding a ["domain" tag](https://opensea.notion.site/opensea/Seaport-Order-Attributions-ec2d69bf455041a5baa490941aad307f). */
     dataSuffix?: Hex
-  }
+  } extends infer type extends { args: unknown; chain: unknown }
+  ? (undefined extends type['args'] ? true : false) &
+      (undefined extends type['chain'] ? true : false) extends true
+    ? PartialBy<
+        type,
+        | (undefined extends type['args'] ? 'args' : never)
+        | (undefined extends type['chain'] ? 'chain' : never)
+      >
+    : type
+  : never
+
+// chain GetChain<TChain, TChainOverride>
+// SendTransactionParameters UnionOmit<SendTransactionParameters<TChain, TAccount, TChainOverride>, 'chain' | 'to' | 'data' | 'value'>
+// value
+// TODO: Evaluate<> works with IDE autocomplete UI
 
 export type WriteContractReturnType = SendTransactionReturnType
 
@@ -98,37 +101,35 @@ export type WriteContractReturnType = SendTransactionReturnType
  * const hash = await writeContract(client, request)
  */
 export async function writeContract<
-  TChain extends Chain | undefined,
-  TAccount extends Account | undefined,
-  TAbi extends Abi | readonly unknown[],
-  TFunctionName extends string,
-  TChainOverride extends Chain | undefined = undefined,
+  clientChain extends Chain | undefined,
+  account extends Account | undefined,
+  const abi extends Abi | readonly unknown[],
+  functionName extends abi extends Abi
+    ? ExtractAbiFunctionNames<abi, 'nonpayable' | 'payable'>
+    : string,
+  chain extends Chain | undefined = undefined,
 >(
-  client: Client<Transport, TChain, TAccount>,
-  {
+  client: Client<Transport, clientChain, account>,
+  parameters: WriteContractParameters<
     abi,
-    address,
-    args,
-    dataSuffix,
     functionName,
-    ...request
-  }: WriteContractParameters<
-    TAbi,
-    TFunctionName,
-    TChain,
-    TAccount,
-    TChainOverride
+    clientChain,
+    account,
+    chain
   >,
+): Promise<WriteContractReturnType>
+
+export async function writeContract(
+  client: Client,
+  parameters: WriteContractParameters,
 ): Promise<WriteContractReturnType> {
-  const data = encodeFunctionData({
-    abi,
-    args,
-    functionName,
-  } as unknown as EncodeFunctionDataParameters<TAbi, TFunctionName>)
+  const { abi, address, args, dataSuffix, functionName, ...request } =
+    parameters
+  const data = encodeFunctionData({ abi, args, functionName })
   const hash = await sendTransaction(client, {
     data: `${data}${dataSuffix ? dataSuffix.replace('0x', '') : ''}`,
     to: address,
     ...request,
-  } as unknown as SendTransactionParameters<TChain, TAccount, TChainOverride>)
+  } as unknown as SendTransactionParameters) // TODO: Remove assertion
   return hash
 }
