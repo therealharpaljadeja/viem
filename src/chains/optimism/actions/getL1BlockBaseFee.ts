@@ -20,8 +20,8 @@ export type GetL1BaseFeeReturnType = bigint
  * - Docs: TODO
  *
  * @param client - Client to use
- * @param parameters - {@link EstimateL1GasParameters}
- * @returns The gas estimate. {@link EstimateL1GasReturnType}
+ * @param parameters - {@link GetL1BaseFeeParameters}
+ * @returns The base fee. {@link GetL1BaseFeeReturnType}
  *
  * @example
  * import { createPublicClient, http, parseEther } from 'viem'

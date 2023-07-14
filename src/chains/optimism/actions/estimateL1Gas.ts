@@ -12,6 +12,7 @@ export type EstimateL1GasParameters<
   TChain extends Chain | undefined,
   TAccount extends Account | undefined = Account | undefined,
 > = EstimateGasParameters<TChain, TAccount>
+
 export type EstimateL1GasReturnType = bigint
 
 /**
