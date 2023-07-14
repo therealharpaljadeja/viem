@@ -7,6 +7,8 @@ test('exports', () => {
     [
       "optimism",
       "optimismGoerli",
+      "estimateL1Gas",
+      "getL1BlockBaseFee",
       "formattersOptimism",
     ]
   `)

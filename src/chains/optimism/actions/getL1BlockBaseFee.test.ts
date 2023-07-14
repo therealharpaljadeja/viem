@@ -1,10 +1,10 @@
 import { beforeAll, expect, test } from 'vitest'
 
-import { accounts } from '../../_test/constants.js'
-import { testClient } from '../../_test/utils.js'
-import { createClient } from '../../clients/createClient.js'
-import { http } from '../../clients/transports/http.js'
-import { reset } from '../../test.js'
+import { accounts } from '../../../_test/constants.js'
+import { testClient } from '../../../_test/utils.js'
+import { createClient } from '../../../clients/createClient.js'
+import { http } from '../../../clients/transports/http.js'
+import { reset } from '../../../test.js'
 import { optimism } from '../index.js'
 import { getL1BlockBaseFee } from './getL1BlockBaseFee.js'
 

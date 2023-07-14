@@ -1,16 +1,18 @@
 import {
   type ReadContractParameters,
   readContract,
-} from '../../actions/public/readContract.js'
-import type { Client } from '../../clients/createClient.js'
-import type { Transport } from '../../clients/transports/createTransport.js'
-import { type Chain } from '../index.js'
-import { gasPriceOracleAbi } from './abis.js'
+} from '../../../actions/public/readContract.js'
+import type { Client } from '../../../clients/createClient.js'
+import type { Transport } from '../../../clients/transports/createTransport.js'
+import { type Chain } from '../../index.js'
+import { gasPriceOracleAbi } from '../abis.js'
 
 export type GetL1BaseFeeParameters = Pick<
   ReadContractParameters,
   'blockNumber' | 'blockTag'
 >
+
+export type GetL1BaseFeeReturnType = bigint
 
 /**
  * Gets the L1 block base fee as seen on the L2.
@@ -35,7 +37,7 @@ export type GetL1BaseFeeParameters = Pick<
 export function getL1BlockBaseFee<TChain extends Chain | undefined>(
   client: Client<Transport, TChain>,
   args: GetL1BaseFeeParameters = {},
-) {
+): Promise<GetL1BaseFeeReturnType> {
   return readContract(client, {
     ...args,
     abi: gasPriceOracleAbi,
